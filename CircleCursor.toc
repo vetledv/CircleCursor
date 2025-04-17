@@ -1,0 +1,10 @@
+## Interface: 110100
+## Title: CircleCursor
+## Notes: A simple circle highligting the cursor position.
+## Author: vetledv
+## Version: 0.0.1
+## SavedVariables: 
+## SavedVariablesPerCharacter: CircleCursorDB
+
+assets/circle.tga
+main.lua
