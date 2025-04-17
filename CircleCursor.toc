@@ -3,8 +3,7 @@
 ## Notes: A simple circle highligting the cursor position.
 ## Author: vetledv
 ## Version: 0.0.1
-## SavedVariables: 
-## SavedVariablesPerCharacter: CircleCursorDB
+## SavedVariables: CircleCursorDB
 
 assets/circle.tga
 main.lua
