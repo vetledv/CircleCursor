@@ -11,11 +11,6 @@ local function LoadSettings()
             CircleCursorDB[key] = value
         end
     end
-    for key, _ in pairs(CircleCursorDB) do
-        if defaults[key] == nil then
-            CircleCursorDB[key] = nil
-        end
-    end
 end
 
 local function CreateCursorFrame()
@@ -25,8 +20,8 @@ local function CreateCursorFrame()
     frame.texture = frame:CreateTexture(nil, "OVERLAY")
     frame.texture:SetTexture("Interface\\AddOns\\CircleCursor\\assets\\circle.tga")
     frame.texture:SetBlendMode("BLEND")
-    frame.texture:SetAlpha(CircleCursorDB.a or 1)
-    frame.texture:SetVertexColor(CircleCursorDB.r, CircleCursorDB.g, CircleCursorDB.b, CircleCursorDB.a)
+    frame.texture:SetAlpha(1)
+    frame.texture:SetVertexColor(1, 1, 1, 1)
     frame:SetFrameStrata("TOOLTIP")
     frame.texture:SetAllPoints(frame)
 
@@ -53,9 +48,7 @@ SlashCmdList["CIRCLECURSOR"] = function(msg)
         frame:SetSize(CircleCursorDB.size, CircleCursorDB.size)
         print("CircleCursor: size set to", arg1)
     else
-        print("CircleCursor commands:")
         print("/cc size [number] - set size")
-        print("/cc color r g b [a] - set color (0-1 values)")
     end
 end
 
