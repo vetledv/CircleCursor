@@ -1,17 +1,19 @@
 local defaults = {
     size = 32,
-    r = 1,
-    g = 1,
-    b = 1,
-    a = 1,
 }
 
 local frame
+
 local function LoadSettings()
     if not CircleCursorDB then CircleCursorDB = {} end
-    for k, v in pairs(defaults) do
-        if CircleCursorDB[k] == nil then
-            CircleCursorDB[k] = v
+    for key, value in pairs(defaults) do
+        if CircleCursorDB[key] == nil then
+            CircleCursorDB[key] = value
+        end
+    end
+    for key, _ in pairs(CircleCursorDB) do
+        if defaults[key] == nil then
+            CircleCursorDB[key] = nil
         end
     end
 end
@@ -35,31 +37,21 @@ local function CreateCursorFrame()
     end)
 end
 
--- Hide cursor when UI is open
 local function HookFrameVisibility(target)
     if not target then return end
     target:HookScript("OnShow", function() frame:Hide() end)
     target:HookScript("OnHide", function() frame:Show() end)
 end
 
--- Slash commands
 SLASH_CIRCLECURSOR1 = "/cc"
 SlashCmdList["CIRCLECURSOR"] = function(msg)
-    local cmd, arg1, arg2, arg3, arg4 = strsplit(" ", msg)
+    local cmd, arg1 = strsplit(" ", msg)
     cmd = cmd:lower()
 
     if cmd == "size" and tonumber(arg1) then
         CircleCursorDB.size = tonumber(arg1)
         frame:SetSize(CircleCursorDB.size, CircleCursorDB.size)
         print("CircleCursor: size set to", arg1)
-    elseif cmd == "color" and arg1 and arg2 and arg3 then
-        local r, g, b, a = tonumber(arg1), tonumber(arg2), tonumber(arg3), tonumber(arg4) or 1
-        CircleCursorDB.r = r
-        CircleCursorDB.g = g
-        CircleCursorDB.b = b
-        CircleCursorDB.a = a
-        frame.texture:SetVertexColor(r, g, b, a)
-        print("CircleCursor: color set to", r, g, b, a)
     else
         print("CircleCursor commands:")
         print("/cc size [number] - set size")
@@ -67,7 +59,6 @@ SlashCmdList["CIRCLECURSOR"] = function(msg)
     end
 end
 
--- Event frame to initialize after ADDON_LOADED
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
