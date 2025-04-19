@@ -6,31 +6,33 @@ CircleCursor.defaults = { size = 32 }
 
 local defaults = CircleCursor.defaults
 
-local frame
+local config = CreateFrame("Frame", "CircleCursorEventFrame")
 
-local config = CreateFrame("Frame")
+function config:createCursor()
+    if self.cursorFrame then return end
+    local f = CreateFrame("Frame", nil, UIParent)
 
-local function CreateCursorFrame()
-    frame = CreateFrame("Frame", nil, UIParent)
-    frame:SetSize(CircleCursorDB.size, CircleCursorDB.size)
+    f:SetSize(CircleCursorDB.size, CircleCursorDB.size)
+    f.texture = f:CreateTexture(nil, "OVERLAY")
+    f.texture:SetTexture("Interface\\AddOns\\CircleCursor\\assets\\circle.tga")
+    f.texture:SetBlendMode("BLEND")
+    f.texture:SetAlpha(1)
+    f.texture:SetVertexColor(1, 1, 1, 1)
+    f:SetFrameStrata("TOOLTIP")
+    f.texture:SetAllPoints(f)
 
-    frame.texture = frame:CreateTexture(nil, "OVERLAY")
-    frame.texture:SetTexture("Interface\\AddOns\\CircleCursor\\assets\\circle.tga")
-    frame.texture:SetBlendMode("BLEND")
-    frame.texture:SetAlpha(1)
-    frame.texture:SetVertexColor(1, 1, 1, 1)
-    frame:SetFrameStrata("TOOLTIP")
-    frame.texture:SetAllPoints(frame)
-
-    frame:SetScript("OnUpdate", function()
+    f:SetScript("OnUpdate", function()
         local x, y = GetCursorPosition()
         local scale = UIParent:GetEffectiveScale()
-        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+        f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x / scale, y / scale)
     end)
+
+    self.cursorFrame = f
 end
 
 function config:loadSettings()
     if not CircleCursorDB then CircleCursorDB = {} end
+    self.globalDb = CircleCursorDB
     for key, value in pairs(defaults) do
         if CircleCursorDB[key] == nil then
             CircleCursorDB[key] = value
@@ -40,23 +42,9 @@ end
 
 function config:HookFrameVisibility(target)
     if not target then return end
-    target:HookScript("OnShow", function() frame:Hide() end)
-    target:HookScript("OnHide", function() frame:Show() end)
+    target:HookScript("OnShow", function() self.cursorFrame:Hide() end)
+    target:HookScript("OnHide", function() self.cursorFrame:Show() end)
 end
-
-local function WatchWeakAurasOptions()
-    local watcher = CreateFrame("Frame")
-    watcher:SetScript("OnUpdate", function(self)
-        if WeakAurasOptions then
-            config:HookFrameVisibility(WeakAurasOptions)
-            self:SetScript("OnUpdate", nil)
-            self:Hide()
-        end
-    end)
-end
-
-config:RegisterEvent("ADDON_LOADED")
-config:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 function config:ADDON_LOADED(addonName)
     if addonName == addon then
@@ -64,12 +52,10 @@ function config:ADDON_LOADED(addonName)
         self.ADDON_LOADED = nil
 
         self:loadSettings()
-        CreateCursorFrame()
+        self:createCursor()
 
         self:HookFrameVisibility(GameMenuFrame)
-        self:HookFrameVisibility(InterfaceOptionsFrame)
-
-        WatchWeakAurasOptions()
+        self:HookFrameVisibility(SettingsPanel)
     end
 end
 
@@ -77,8 +63,8 @@ function config:PLAYER_ENTERING_WORLD()
     self:UnregisterEvent("PLAYER_ENTERING_WORLD")
     self.PLAYER_ENTERING_WORLD = nil
 
-    if CircleCursorDB.size then
-        frame:SetSize(CircleCursorDB.size, CircleCursorDB.size)
+    if self.globalDb.size then
+        self.cursorFrame:SetSize(self.globalDb.size, self.globalDb.size)
     end
 end
 
@@ -86,21 +72,29 @@ function config:executeCommand(msg)
     local cmd, arg1 = strsplit(" ", msg)
     cmd = cmd:lower()
 
-    if cmd == "size" and tonumber(arg1) then
-        CircleCursorDB.size = tonumber(arg1)
-        frame:SetSize(CircleCursorDB.size, CircleCursorDB.size)
-        print("CircleCursor: size set to", arg1)
+    if cmd == "size" then
+        self:handleSizeCommand(arg1)
     else
         print("/cc size [number] - set size")
+    end
+end
+
+function config:handleSizeCommand(sizeArg)
+    if sizeArg and tonumber(sizeArg) then
+        self.globalDb.size = tonumber(sizeArg)
+        self.cursorFrame:SetSize(self.globalDb.size, self.globalDb.size)
+        print("CircleCursor: size set to", sizeArg)
     end
 end
 
 SLASH_CIRCLECURSOR1 = "/cc"
 SlashCmdList["CIRCLECURSOR"] = function(msg) config:executeCommand(msg) end
 
+config:RegisterEvent("ADDON_LOADED")
+config:RegisterEvent("PLAYER_ENTERING_WORLD")
+
 config:SetScript("OnEvent", function(self, event, ...)
     if self[event] then
         self[event](self, ...)
     end
 end)
-
