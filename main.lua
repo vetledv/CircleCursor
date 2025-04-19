@@ -1,17 +1,14 @@
-local defaults = {
-    size = 32,
-}
+local addon, ns = ...
+
+local CircleCursor = ns.CircleCursor or {}
+
+CircleCursor.defaults = { size = 32 }
+
+local defaults = CircleCursor.defaults
 
 local frame
 
-local function LoadSettings()
-    if not CircleCursorDB then CircleCursorDB = {} end
-    for key, value in pairs(defaults) do
-        if CircleCursorDB[key] == nil then
-            CircleCursorDB[key] = value
-        end
-    end
-end
+local config = CreateFrame("Frame")
 
 local function CreateCursorFrame()
     frame = CreateFrame("Frame", nil, UIParent)
@@ -32,14 +29,60 @@ local function CreateCursorFrame()
     end)
 end
 
-local function HookFrameVisibility(target)
+function config:loadSettings()
+    if not CircleCursorDB then CircleCursorDB = {} end
+    for key, value in pairs(defaults) do
+        if CircleCursorDB[key] == nil then
+            CircleCursorDB[key] = value
+        end
+    end
+end
+
+function config:HookFrameVisibility(target)
     if not target then return end
     target:HookScript("OnShow", function() frame:Hide() end)
     target:HookScript("OnHide", function() frame:Show() end)
 end
 
-SLASH_CIRCLECURSOR1 = "/cc"
-SlashCmdList["CIRCLECURSOR"] = function(msg)
+local function WatchWeakAurasOptions()
+    local watcher = CreateFrame("Frame")
+    watcher:SetScript("OnUpdate", function(self)
+        if WeakAurasOptions then
+            config:HookFrameVisibility(WeakAurasOptions)
+            self:SetScript("OnUpdate", nil)
+            self:Hide()
+        end
+    end)
+end
+
+config:RegisterEvent("ADDON_LOADED")
+config:RegisterEvent("PLAYER_ENTERING_WORLD")
+
+function config:ADDON_LOADED(addonName)
+    if addonName == addon then
+        self:UnregisterEvent("ADDON_LOADED")
+        self.ADDON_LOADED = nil
+
+        self:loadSettings()
+        CreateCursorFrame()
+
+        self:HookFrameVisibility(GameMenuFrame)
+        self:HookFrameVisibility(InterfaceOptionsFrame)
+
+        WatchWeakAurasOptions()
+    end
+end
+
+function config:PLAYER_ENTERING_WORLD()
+    self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+    self.PLAYER_ENTERING_WORLD = nil
+
+    if CircleCursorDB.size then
+        frame:SetSize(CircleCursorDB.size, CircleCursorDB.size)
+    end
+end
+
+function config:executeCommand(msg)
     local cmd, arg1 = strsplit(" ", msg)
     cmd = cmd:lower()
 
@@ -52,23 +95,12 @@ SlashCmdList["CIRCLECURSOR"] = function(msg)
     end
 end
 
-local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("ADDON_LOADED")
-eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-eventFrame:SetScript("OnEvent", function(_, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == "CircleCursor" then
-        LoadSettings()
-        CreateCursorFrame()
+SLASH_CIRCLECURSOR1 = "/cc"
+SlashCmdList["CIRCLECURSOR"] = function(msg) config:executeCommand(msg) end
 
-        HookFrameVisibility(GameMenuFrame)
-        HookFrameVisibility(InterfaceOptionsFrame)
-
-        if WeakAurasOptions then
-            HookFrameVisibility(WeakAurasOptions)
-        end
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        if WeakAurasOptions then
-            HookFrameVisibility(WeakAurasOptions)
-        end
+config:SetScript("OnEvent", function(self, event, ...)
+    if self[event] then
+        self[event](self, ...)
     end
 end)
+
